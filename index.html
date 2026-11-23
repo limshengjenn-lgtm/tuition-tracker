@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>一对一补习记录</title>
+<style>
+  :root{
+    --bg:#f5f3ef; --card:#fff; --ink:#1f2328; --muted:#6b7280; --line:#e5e1da;
+    --accent:#2f6f5e; --accent-soft:#e3efe9; --danger:#b42318; --danger-soft:#fdecea;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#16181b; --card:#1f2226; --ink:#e8e6e3; --muted:#9aa0a6; --line:#33373c;
+      --accent:#6fc2a5; --accent-soft:#1f3a31; --danger:#f2786b; --danger-soft:#3a1f1d; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;
+    font-size:16px;line-height:1.5;padding-bottom:env(safe-area-inset-bottom)}
+  header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+  .wrap{max-width:760px;margin:0 auto;padding:0 16px}
+  .top{display:flex;align-items:center;justify-content:space-between;padding:14px 0 8px}
+  h1{font-size:19px;margin:0;font-weight:700}
+  .today{color:var(--muted);font-size:14px}
+  nav{display:flex;gap:6px;padding-bottom:10px}
+  nav button{flex:1;border:1px solid var(--line);background:var(--card);color:var(--ink);
+    padding:9px;border-radius:10px;font-size:15px;cursor:pointer}
+  nav button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+  section{display:none;padding:16px 0 40px}
+  section.on{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .hint{color:var(--muted);font-size:14px;margin:0 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+  .stu{position:relative;border:1px solid var(--line);background:var(--card);border-radius:14px;
+    padding:18px 12px;text-align:center;cursor:pointer;user-select:none;transition:transform .08s}
+  .stu:active{transform:scale(.97)}
+  .stu .name{font-size:20px;font-weight:700}
+  .stu .meta{font-size:13px;color:var(--muted);margin-top:4px}
+  .stu.done{border-color:var(--accent);background:var(--accent-soft)}
+  .stu.done::after{content:"✓ 今天已记录";position:absolute;top:6px;right:8px;font-size:11px;color:var(--accent);font-weight:600}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input,select,textarea{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);
+    border-radius:8px;padding:8px 10px}
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  .btn{border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:8px;
+    padding:8px 14px;font:inherit;font-size:15px;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--accent)}
+  .btn.danger{background:transparent;border-color:var(--danger);color:var(--danger)}
+  .btn.sm{padding:4px 10px;font-size:14px}
+  .total{display:flex;gap:24px;flex-wrap:wrap}
+  .total div{min-width:110px}
+  .total b{display:block;font-size:28px;line-height:1.2}
+  .total span{color:var(--muted);font-size:13px}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:13px;color:var(--muted);font-weight:600;padding:6px 4px;border-bottom:1px solid var(--line)}
+  td{padding:6px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+  td input{width:100%;padding:6px 8px}
+  td.h input{max-width:80px}
+  .wd{font-size:12px;color:var(--muted)}
+  .empty{color:var(--muted);text-align:center;padding:20px}
+  .list-stu{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)}
+  .list-stu:last-child{border-bottom:0}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);
+    padding:12px 16px;border-radius:12px;display:none;gap:14px;align-items:center;z-index:20;
+    box-shadow:0 6px 24px rgba(0,0,0,.2);max-width:92vw}
+  .toast.on{display:flex}
+  .toast button{background:none;border:0;color:var(--accent);font:inherit;font-weight:700;cursor:pointer}
+  @media (prefers-color-scheme: light){ .toast button{color:#8fe0c2} }
+  @media (max-width:560px){
+    thead{display:none}
+    table,tbody,tr,td{display:block;width:100%}
+    tr{border:1px solid var(--line);border-radius:10px;padding:8px;margin-bottom:10px}
+    td{border:0;padding:4px 0;display:flex;gap:8px;align-items:center}
+    td::before{content:attr(data-l);min-width:42px;font-size:13px;color:var(--muted)}
+    td.h input{max-width:none}
+  }
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:30;padding:16px}
+  .modal.on{display:flex}
+  .modal .box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;width:100%;max-width:360px}
+  .modal p{margin:0 0 14px;white-space:pre-line}
+  .modal input{width:100%;margin-bottom:14px}
+  .modal .row{justify-content:flex-end}
+  .btn.dangerfill{background:var(--danger);border-color:var(--danger);color:#fff}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top"><h1>一对一补习记录</h1><span class="today" id="todayLabel"></span></div>
+    <nav>
+      <button data-tab="home" class="on">打卡</button>
+      <button data-tab="records">记录</button>
+      <button data-tab="settings">学生与设定</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- 打卡 -->
+  <section id="home" class="on">
+    <p class="hint">点学生名字，就记录今天补习 <b id="defHoursLabel">2</b> 小时。</p>
+    <div class="grid" id="stuGrid"></div>
+    <div class="empty" id="noStu" style="display:none">还没有学生，请到「学生与设定」新增。</div>
+  </section>
+
+  <!-- 记录 -->
+  <section id="records">
+    <div class="card">
+      <div class="row">
+        <select id="recStu"></select>
+        <select id="recYear"></select>
+      </div>
+    </div>
+    <div class="card total">
+      <div><b id="sumHours">0</b><span>总时数（小时）</span></div>
+      <div><b id="sumCount">0</b><span>补习次数</span></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px">
+        <strong>补习记录</strong>
+        <div class="row">
+          <button class="btn ghost sm" id="addRow">＋ 手动新增</button>
+          <button class="btn ghost sm" id="csvBtn">导出 CSV</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th style="width:150px">日期</th><th style="width:90px">小时</th><th>备注</th><th style="width:60px"></th></tr></thead>
+        <tbody id="recBody"></tbody>
+      </table>
+      <div class="empty" id="noRec" style="display:none">这段时间没有记录。</div>
+      <p class="hint" style="margin-top:10px">直接修改日期、小时、备注，离开输入框就自动保存。</p>
+    </div>
+  </section>
+
+  <!-- 设定 -->
+  <section id="settings">
+    <div class="card">
+      <strong>学生</strong>
+      <div class="row" style="margin:10px 0">
+        <input id="newName" placeholder="学生名字" style="flex:1;min-width:140px">
+        <button class="btn" id="addStu">新增</button>
+      </div>
+      <div id="stuList"></div>
+    </div>
+    <div class="card">
+      <strong>默认补习时数</strong>
+      <div class="row" style="margin-top:10px">
+        <input type="number" id="defHours" min="0.5" step="0.5" style="width:100px"> 小时
+      </div>
+    </div>
+    <div class="card">
+      <strong>备份与还原</strong>
+      <p class="hint" style="margin-top:6px">资料只存在这个浏览器里。换手机／电脑或清除浏览器资料前，请先备份。</p>
+      <div class="row">
+        <button class="btn ghost" id="backupBtn">下载备份 (JSON)</button>
+        <label class="btn ghost" style="display:inline-block">还原备份
+          <input type="file" id="restoreFile" accept=".json,application/json" hidden></label>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">撤销</button></div>
+
+<div class="modal" id="modal"><div class="box"><p id="mMsg"></p><input id="mInput"><div class="row"><button class="btn ghost" id="mCancel">取消</button><button class="btn" id="mOk">确定</button></div></div></div>
+<script>
+const KEY = 'tuition-tracker-v1';
+const WD = ['日','一','二','三','四','五','六'];
+let db = load();
+
+function load(){
+  try{
+    const d = JSON.parse(localStorage.getItem(KEY));
+    if(d && Array.isArray(d.students)) return Object.assign({defaultHours:2, records:[]}, d);
+  }catch(e){}
+  return {students:[], records:[], defaultHours:2};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){ note('保存失败：'+e.message); } }
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const todayStr = () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const wd = s => { const [y,m,d]=s.split('-').map(Number); return '星期'+WD[new Date(y,m-1,d).getDay()]; };
+const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => (Math.round(n*100)/100).toString();
+const stuName = id => (db.students.find(s=>s.id===id)||{}).name||'(已删除)';
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id===b.dataset.tab));
+  render();
+});
+
+/* ---------- home ---------- */
+function renderHome(){
+  const t = todayStr();
+  document.getElementById('todayLabel').textContent = t+' '+wd(t);
+  document.getElementById('defHoursLabel').textContent = fmt(db.defaultHours);
+  const g = document.getElementById('stuGrid');
+  document.getElementById('noStu').style.display = db.students.length?'none':'block';
+  g.innerHTML = db.students.map(s=>{
+    const recs = db.records.filter(r=>r.studentId===s.id);
+    const done = recs.some(r=>r.date===t);
+    const last = recs.map(r=>r.date).sort().pop();
+    return `<div class="stu${done?' done':''}" data-id="${s.id}">
+      <div class="name">${esc(s.name)}</div>
+      <div class="meta">${last?'上次 '+last.slice(5):'还没有记录'}</div></div>`;
+  }).join('');
+  g.querySelectorAll('.stu').forEach(el=>el.onclick=()=>checkIn(el.dataset.id));
+}
+async function checkIn(id){
+  const t = todayStr(), s = db.students.find(x=>x.id===id);
+  if(db.records.some(r=>r.studentId===id && r.date===t) &&
+     !(await ask(`${s.name} 今天已经有记录了，要再记一次吗？`))) return;
+  const rec = {id:uid(), studentId:id, date:t, hours:Number(db.defaultHours)||2, note:''};
+  db.records.push(rec); save(); render();
+  toast(`已记录：${s.name} ${t} ${fmt(rec.hours)} 小时`, ()=>{ db.records=db.records.filter(r=>r.id!==rec.id); save(); render(); });
+}
+
+/* ---------- records ---------- */
+function renderRecords(){
+  const ss = document.getElementById('recStu'), ys = document.getElementById('recYear');
+  const curS = ss.value, curY = ys.value;
+  ss.innerHTML = db.students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  if(db.students.some(s=>s.id===curS)) ss.value = curS;
+  const years = [...new Set(db.records.filter(r=>r.studentId===ss.value).map(r=>r.date.slice(0,4)))].sort().reverse();
+  const thisY = String(new Date().getFullYear());
+  if(!years.includes(thisY)) years.unshift(thisY);
+  ys.innerHTML = `<option value="all">全部年份</option>`+years.map(y=>`<option>${y}</option>`).join('');
+  ys.value = (curY && [...ys.options].some(o=>o.value===curY)) ? curY : thisY;
+
+  const list = db.records.filter(r=>r.studentId===ss.value && (ys.value==='all'||r.date.startsWith(ys.value)))
+                         .sort((a,b)=>a.date.localeCompare(b.date));
+  document.getElementById('sumHours').textContent = fmt(list.reduce((a,r)=>a+(Number(r.hours)||0),0));
+  document.getElementById('sumCount').textContent = list.length;
+  document.getElementById('noRec').style.display = list.length?'none':'block';
+  document.getElementById('recBody').innerHTML = list.map(r=>`<tr data-id="${r.id}">
+    <td data-l="日期"><input type="date" value="${r.date}" data-f="date"><span class="wd">${wd(r.date)}</span></td>
+    <td data-l="小时" class="h"><input type="number" min="0" step="0.5" value="${r.hours}" data-f="hours"></td>
+    <td data-l="备注"><input value="${esc(r.note)}" data-f="note" placeholder="例：改到星期一、迟到半小时"></td>
+    <td><button class="btn danger sm" data-del>删除</button></td></tr>`).join('');
+  document.querySelectorAll('#recBody input').forEach(inp=>inp.onchange=()=>{
+    const r = db.records.find(x=>x.id===inp.closest('tr').dataset.id); const f = inp.dataset.f;
+    if(f==='date' && !inp.value){ inp.value=r.date; return; }
+    r[f] = f==='hours' ? (Number(inp.value)||0) : inp.value; save(); renderRecords();
+  });
+  document.querySelectorAll('#recBody [data-del]').forEach(b=>b.onclick=async()=>{
+    const id=b.closest('tr').dataset.id, r=db.records.find(x=>x.id===id);
+    if(!(await ask(`删除 ${r.date} 的记录？`,'删除'))) return;
+    db.records=db.records.filter(x=>x.id!==id); save(); render();
+    toast('已删除记录',()=>{ db.records.push(r); save(); render(); });
+  });
+}
+document.getElementById('recStu').onchange = ()=>{ document.getElementById('recYear').value=''; renderRecords(); };
+document.getElementById('recYear').onchange = renderRecords;
+document.getElementById('addRow').onclick = ()=>{
+  const sid = document.getElementById('recStu').value; if(!sid) return note('请先新增学生');
+  db.records.push({id:uid(), studentId:sid, date:todayStr(), hours:Number(db.defaultHours)||2, note:''});
+  save(); renderRecords();
+};
+document.getElementById('csvBtn').onclick = ()=>{
+  const sid = document.getElementById('recStu').value, y = document.getElementById('recYear').value;
+  const list = db.records.filter(r=>r.studentId===sid && (y==='all'||r.date.startsWith(y))).sort((a,b)=>a.date.localeCompare(b.date));
+  const q = v => '"'+String(v??'').replace(/"/g,'""')+'"';
+  const csv = '﻿'+['学生,日期,星期,小时,备注', ...list.map(r=>[stuName(r.studentId),r.date,wd(r.date),r.hours,r.note].map(q).join(','))].join('\n');
+  download(`补习记录_${stuName(sid)}_${y==='all'?'全部':y}.csv`, csv, 'text/csv');
+};
+
+/* ---------- settings ---------- */
+function renderSettings(){
+  document.getElementById('defHours').value = db.defaultHours;
+  document.getElementById('stuList').innerHTML = db.students.map((s,i)=>`<div class="list-stu" data-id="${s.id}">
+    <span><b>${esc(s.name)}</b> <span class="wd">${db.records.filter(r=>r.studentId===s.id).length} 笔记录</span></span>
+    <span class="row">
+      <button class="btn ghost sm" data-up ${i===0?'disabled':''}>↑</button>
+      <button class="btn ghost sm" data-ren>改名</button>
+      <button class="btn danger sm" data-rm>删除</button></span></div>`).join('') || '<p class="hint">还没有学生。</p>';
+  document.querySelectorAll('#stuList .list-stu').forEach(el=>{
+    const id = el.dataset.id, s = db.students.find(x=>x.id===id);
+    el.querySelector('[data-ren]').onclick=async()=>{ const n=await askText('新名字',s.name); if(n&&n.trim()){ s.name=n.trim(); save(); render(); } };
+    el.querySelector('[data-up]').onclick=()=>{ const i=db.students.indexOf(s); if(i>0){ [db.students[i-1],db.students[i]]=[db.students[i],db.students[i-1]]; save(); render(); } };
+    el.querySelector('[data-rm]').onclick=async()=>{
+      const n = db.records.filter(r=>r.studentId===id).length;
+      if(!(await ask(`删除学生「${s.name}」？${n?`\n他的 ${n} 笔补习记录也会一起删除。`:''}`,'删除'))) return;
+      db.students=db.students.filter(x=>x.id!==id); db.records=db.records.filter(r=>r.studentId!==id); save(); render();
+    };
+  });
+}
+document.getElementById('addStu').onclick = async()=>{
+  const inp=document.getElementById('newName'), n=inp.value.trim(); if(!n) return;
+  if(db.students.some(s=>s.name===n) && !(await ask('已有同名学生，还是要新增吗？'))) return;
+  db.students.push({id:uid(), name:n}); inp.value=''; save(); render();
+};
+document.getElementById('newName').onkeydown = e=>{ if(e.key==='Enter') document.getElementById('addStu').click(); };
+document.getElementById('defHours').onchange = e=>{ const v=Number(e.target.value); if(v>0){ db.defaultHours=v; save(); render(); } };
+document.getElementById('backupBtn').onclick = ()=> download(`补习记录备份_${todayStr()}.json`, JSON.stringify(db,null,2), 'application/json');
+document.getElementById('restoreFile').onchange = e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader(); rd.onload=async()=>{
+    try{ const d=JSON.parse(rd.result); if(!Array.isArray(d.students)||!Array.isArray(d.records)) throw 0;
+      if(!(await ask(`备份里有 ${d.students.length} 位学生、${d.records.length} 笔记录。\n还原会覆盖目前的资料，确定吗？`,'还原'))){ e.target.value=''; return; }
+      db=Object.assign({defaultHours:2},d); save(); render(); note('还原完成');
+    }catch(x){ note('这个档案不是有效的备份'); }
+    e.target.value='';
+  }; rd.readAsText(f);
+};
+
+/* ---------- utils ---------- */
+function download(name, text, type){
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type}));
+  a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+let toastTimer;
+function toast(msg, undo){
+  const t=document.getElementById('toast'); document.getElementById('toastMsg').textContent=msg;
+  const u=document.getElementById('toastUndo'); u.style.display=undo?'':'none';
+  u.onclick=()=>{ undo&&undo(); t.classList.remove('on'); };
+  t.classList.add('on'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('on'),5000);
+}
+/* ---------- in-page dialogs (no browser popups) ---------- */
+function dialog(msg,{input=null,okText='确定',cancel=true,danger=false}={}){
+  return new Promise(res=>{
+    const m=document.getElementById('modal'),i=document.getElementById('mInput'),ok=document.getElementById('mOk'),c=document.getElementById('mCancel');
+    document.getElementById('mMsg').textContent=msg;
+    i.style.display=input===null?'none':''; i.value=input??'';
+    ok.textContent=okText; ok.className='btn'+(danger?' dangerfill':''); c.style.display=cancel?'':'none';
+    const done=v=>{ m.classList.remove('on'); ok.onclick=c.onclick=m.onclick=i.onkeydown=null; res(v); };
+    ok.onclick=()=>done(input===null?true:i.value);
+    c.onclick=()=>done(input===null?false:null);
+    m.onclick=e=>{ if(e.target===m) done(input===null?false:null); };
+    i.onkeydown=e=>{ if(e.key==='Enter') ok.click(); };
+    m.classList.add('on'); (input===null?ok:i).focus();
+  });
+}
+const ask=(msg,okText='确定')=>dialog(msg,{okText,danger:okText==='删除'});
+const askText=(msg,val)=>dialog(msg,{input:val});
+const note=msg=>dialog(msg,{cancel:false});
+
+function render(){ renderHome(); renderRecords(); renderSettings(); }
+render();
+</script>
+</body>
+</html>
